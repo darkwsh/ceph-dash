@@ -1,4 +1,6 @@
 $(function () {
+    var audio = document.createElement("audio");
+    audio.src = "static/sound/Warning Siren-SoundBible.com-898272278.mp3";
     // global variable to configure refresh interval and timeout (in seconds!)
     var refreshInterval = 5;
     var refreshTimeout = 3;
@@ -321,9 +323,15 @@ $(function () {
             if (numOSDunhealthy == '0') {
                 $parent.removeClass('panel-danger');
                 $parent.addClass('panel-success');
+                if ( !audio.ended && !audio.paused ) {
+                    audio.pause();
+                }
             } else {
                 $parent.removeClass('panel-success');
                 $parent.addClass('panel-danger');
+                if ( audio.ended || audio.paused ) {
+                    audio.play();
+                }
             }
 
             // *overall status*
@@ -404,6 +412,15 @@ $(function () {
             // update overall cluster state
             $("#overall_status").empty();
             $("#overall_status").append(message(ceph2bootstrap[clusterStatusOverall], 'Cluster Status:' + clusterStatusOverall));
+            if ( ceph2bootstrap[clusterStatusOverall] == 'success' ) {
+                if ( !audio.ended && !audio.paused ) {
+                    audio.pause();
+                }
+            }else{
+                if ( audio.ended || audio.paused ) {
+                    audio.play();
+                }
+            }
 
             // update overall cluster status details
             $("#overall_status").append('<ul class="list-group">');
