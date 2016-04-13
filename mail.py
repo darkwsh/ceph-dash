@@ -53,7 +53,7 @@ class MailMonitor:
         self.config = CephApiConfig()
         self.clusterprop = CephClusterProperties(self.config)
     
-    def get(self):
+    def get_error_osd_info(self):
 	with Rados(**self.clusterprop) as cluster:
 	    cluster_status = CephClusterCommand(cluster, prefix='status', format='json')
        	    if 'err' in cluster_status:
@@ -73,7 +73,18 @@ class MailMonitor:
 	    else:
 		return '';
 
+    def get_error_mon_info(self):
+        with Rados(**self.clusterprop) as cluster:
+            cluster_status = CephClusterCommand(cluster, prefix='status', format='json')
+            monmap_mons = cluster_status['monmap']['mons']
+            timecheck_mons = cluster_status['health']['timechecks']['mons']
+            err_mons = monmap_mons[:]
+            for monmap_mon in monmap_mons:
+                for timecheck_mon in timecheck_mons:
+                    if timecheck_mon['name'] == monmap_mon['name']:
+                        err_mons.remove(monmap_mon)
 
+        return err_mons
 
 if __name__ == '__main__':
     mon = MailMonitor()
@@ -86,8 +97,9 @@ if __name__ == '__main__':
     mail_sender.set_mailto(mailto_list)
 
     while True:
-        osd_status = mon.get()
-        if osd_status != '':
+        osd_status = mon.get_error_osd_info()
+        mon_status = mon.get_error_mon_info()
+        if osd_status != '' or len(mon_status) > 0:
     	    context = "<table>"
 	    context += "<tr>"
 	    context += "<td style='width:100px'>status</td>"
@@ -99,6 +111,9 @@ if __name__ == '__main__':
 		    context += "<tr><td>"+item['status']+"</td><td>"+item['host']+"</td><td>"+item['name']+"</td></tr>"
 	    else:
 		context += "<tr><td colspan='3'>"+str(osd_status)+"</td></tr>"
+
+            for mon in mon_status:
+                context += "<tr><td>"+ "mon_error" +"</td><td>"+mon['addr']+"</td><td>"+mon['name']+"</td></tr>"
 	    context += "</table>"
 	    mail_sender.send_mail(str(context))
 	time.sleep(300)

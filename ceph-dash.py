@@ -196,7 +196,7 @@ class CephAPI(Flask):
 
 def main():
     app = CephAPI(__name__)
-    app.run(debug=False, host='0.0.0.0')
+    app.run(debug=False, host='0.0.0.0', port=8080)
 
 
 if __name__ == '__main__':
